@@ -1,0 +1,11 @@
+# Dependencies & caches
+node_modules/
+.vite/
+dist/
+
+# Agent skills cache
+.agents/
+skills-lock.json
+
+# Local scripts
+start.bat
