@@ -1,13 +1,13 @@
 // Service Worker for DhaanTrack PWA
-const CACHE_NAME = 'dhaantrack-cache-v1';
+const CACHE_NAME = 'dhaantrack-cache-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './style.css',
-  './app.js',
+  './assets/css/style.css',
+  './assets/js/app.js',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.png'
 ];
 
 // Install Event
@@ -32,10 +32,8 @@ self.addEventListener('activate', (event) => {
 
 // Fetch Event (Network First, falling back to cache)
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests
   if (event.request.method !== 'GET') return;
 
-  // Let Firebase / Google API requests pass through directly
   const url = event.request.url;
   if (url.includes('firebase') || url.includes('googleapis') || url.includes('gstatic')) {
     return;
@@ -44,7 +42,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cache successful response clone
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -56,4 +53,3 @@ self.addEventListener('fetch', (event) => {
       .catch(() => caches.match(event.request))
   );
 });
-
