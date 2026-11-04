@@ -866,3 +866,19 @@ window.addEventListener('appinstalled', () => {
   console.log('DhaanTrack was successfully installed as an App!');
   if (installBanner) installBanner.style.display = 'none';
 });
+
+
+// ── Header Download Button Click Handler ──────────────────
+const btnHeaderDownload = document.getElementById('btn-header-download');
+if (btnHeaderDownload) {
+  btnHeaderDownload.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('User response to header download:', outcome);
+      deferredPrompt = null;
+    } else {
+      alert('To download/install:\n1. On PC: Look for the Install icon (⊕) on the right side of your browser URL bar.\n2. On Mobile: Tap the 3-dot menu (⋮) and select "Add to Home Screen" or "Install App".');
+    }
+  });
+}
