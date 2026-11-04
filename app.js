@@ -882,3 +882,19 @@ if (btnHeaderDownload) {
     }
   });
 }
+
+
+// ── Fixed Top Corner Download Button Click ─────────────────
+const cornerDownloadBtn = document.getElementById('corner-download-btn');
+if (cornerDownloadBtn) {
+  cornerDownloadBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('User response to corner install:', outcome);
+      deferredPrompt = null;
+    } else {
+      alert('To install DhaanTrack:\n1. On PC: Look for the Install icon (⊕) on the right side of the address bar.\n2. On Mobile: Tap the 3 dots (⋮) and tap "Install app" or "Add to Home screen".');
+    }
+  });
+}
