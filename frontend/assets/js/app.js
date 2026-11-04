@@ -10,14 +10,16 @@ import {
   query, 
   orderBy, 
   serverTimestamp, 
-  getDocs 
+  getDocs,
+  where 
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
 // ── Firebase Configuration ─────────────────────────────────
@@ -111,13 +113,18 @@ const modalAddEntry = document.getElementById('modal-add-entry');
 
 // ── Realtime Firebase Sync ─────────────────────────────────
 function initFirebaseSync() {
-  const q = query(collection(db, 'events'), orderBy('createdAt', 'desc'));
+  if (!auth.currentUser) return;
+  const currentUid = auth.currentUser.uid;
+  // STRICT USER FILTER: only fetch events created by this specific user
+  const q = query(collection(db, 'events'), where('userId', '==', currentUid));
   eventsUnsubscribe = onSnapshot(q, (snapshot) => {
     events = snapshot.docs.map(doc => ({
+
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
     }));
+    events.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
     // Clear old records unsubscribers before re-subscribing
     recordsUnsubscribers.forEach(u => u());
@@ -188,11 +195,29 @@ function renderHomeEvents() {
   }
 
   if (filtered.length === 0) {
-    eventsList.innerHTML = `
-      <div class="empty-state">
-        <div class="ei">🔍</div>
-        <p>No events found</p>
-      </div>`;
+    if (searchQuery.trim() || activeCategory !== 'all') {
+      eventsList.innerHTML = `
+        <div class="empty-state">
+          <div class="ei">🔍</div>
+          <p>No matching events found</p>
+        </div>`;
+    } else {
+      eventsList.innerHTML = `
+        <div class="empty-state" style="padding: 40px 20px; text-align:center;">
+          <div class="ei" style="font-size: 52px; margin-bottom: 12px;">📭</div>
+          <p style="font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 6px;">No events yet</p>
+          <p style="font-size: 13px; color: var(--text-2); margin-bottom: 16px;">Create your first event to start tracking donations and expenses.</p>
+          <button class="btn btn-primary btn-sm" id="btn-empty-create" style="margin:0 auto; padding: 10px 20px; font-weight: 700;">
+            ＋ Create New Event
+          </button>
+        </div>`;
+      const btnEmpty = document.getElementById('btn-empty-create');
+      if (btnEmpty) {
+        btnEmpty.addEventListener('click', () => {
+          document.getElementById('btn-open-create-modal').click();
+        });
+      }
+    }
     return;
   }
 
@@ -360,6 +385,7 @@ document.getElementById('form-create-event').addEventListener('submit', async (e
   const docRef = await addDoc(collection(db, 'events'), {
     name,
     upiId,
+    userId: auth.currentUser ? auth.currentUser.uid : '',
     createdAt: serverTimestamp()
   });
 
@@ -728,13 +754,33 @@ function cleanFirestoreListeners() {
   records = {};
 }
 
+
+function formatUserName(user) {
+  if (!user) return 'User';
+  if (user.displayName && user.displayName.trim()) {
+    return user.displayName.trim();
+  }
+  // Check known accounts mapping
+  if (user.email === 'rd@gmail.com') return 'Ram Das';
+  if (user.email === 'dr@gmail.com') return 'Dev Roy';
+
+  // Check locally saved registration name
+  const savedName = localStorage.getItem('user_name_' + user.uid);
+  if (savedName) return savedName;
+
+  if (user.email) {
+    return user.email.split('@')[0];
+  }
+  return 'User';
+}
+
 // Auth State Monitor
 onAuthStateChanged(auth, (user) => {
   if (user) {
     // Authenticated! Show app and load records
     authOverlay.style.display = 'none';
     appWrapper.style.display = 'block';
-    userDisplayEmail.textContent = user.displayName || user.email || 'Dev Roy';
+    userDisplayEmail.textContent = formatUserName(user);
     cleanFirestoreListeners();
     initFirebaseSync();
   } else {
@@ -784,7 +830,12 @@ formRegister.addEventListener('submit', async (e) => {
   try {
     btn.disabled = true;
     btn.textContent = 'Creating account…';
-    await createUserWithEmailAndPassword(auth, email, password);
+    const fullName = document.getElementById('reg-name').value.trim();
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    if (fullName) {
+      localStorage.setItem('user_name_' + userCred.user.uid, fullName);
+      await updateProfile(userCred.user, { displayName: fullName });
+    }
     regSuccess.textContent = 'Account created successfully!';
     formRegister.reset();
   } catch (err) {

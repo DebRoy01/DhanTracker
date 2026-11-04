@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Each user can ONLY read and write their own events
+    match /events/{eventId} {
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Sub-collection records are accessible if the user owns the parent event
+      match /records/{recordId} {
+        allow read, write: if request.auth != null && 
+          get(/databases/$(database)/documents/events/$(eventId)).data.userId == request.auth.uid;
+      }
+    }
+    
+  }
+}
