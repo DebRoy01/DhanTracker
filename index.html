@@ -30,6 +30,22 @@
   <link rel="icon" type="image/png" href="icon-192.png" />
 </head>
 <body>
+
+  <!-- PWA Install / Download Prompt Banner -->
+  <div id="pwa-install-banner" class="pwa-install-banner" style="display:none;">
+    <div class="pwa-banner-content">
+      <img src="icon-192.png" alt="DhaanTrack" class="pwa-banner-icon" />
+      <div class="pwa-banner-text">
+        <div class="pwa-banner-title">Install DhaanTrack App</div>
+        <div class="pwa-banner-desc">Install on your device for fast, one-click access anytime!</div>
+      </div>
+      <div class="pwa-banner-actions">
+        <button id="pwa-btn-dismiss" class="btn btn-outline btn-sm">Not Now</button>
+        <button id="pwa-btn-install" class="btn btn-primary btn-sm">📲 Download / Install</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Auth Overlay (Login / Register Swapping Screen) -->
   <div class="auth-overlay" id="auth-overlay">
     <div class="auth-wrapper" id="authWrapper">

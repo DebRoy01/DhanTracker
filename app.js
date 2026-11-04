@@ -817,3 +817,52 @@ if ('serviceWorker' in navigator) {
       .catch((err) => console.log('ServiceWorker registration failed:', err));
   });
 }
+
+
+// ── PWA Download / Install Popup Logic ─────────────────────
+let deferredPrompt = null;
+const installBanner = document.getElementById('pwa-install-banner');
+const btnInstall = document.getElementById('pwa-btn-install');
+const btnDismiss = document.getElementById('pwa-btn-dismiss');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent Chrome 67 and earlier from automatically showing the prompt
+  e.preventDefault();
+  // Stash the event so it can be triggered later.
+  deferredPrompt = e;
+  
+  // Show banner if not dismissed in this session
+  if (!sessionStorage.getItem('pwa-prompt-dismissed')) {
+    setTimeout(() => {
+      if (installBanner) installBanner.style.display = 'block';
+    }, 1500);
+  }
+});
+
+if (btnInstall) {
+  btnInstall.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('User response to install prompt:', outcome);
+      deferredPrompt = null;
+      if (installBanner) installBanner.style.display = 'none';
+    } else {
+      // Fallback instruction for iOS / standalone browsers
+      alert('To install: Tap the Share / Menu button (⋮) in your browser and select "Add to Home Screen" / "Install App".');
+      if (installBanner) installBanner.style.display = 'none';
+    }
+  });
+}
+
+if (btnDismiss) {
+  btnDismiss.addEventListener('click', () => {
+    sessionStorage.setItem('pwa-prompt-dismissed', 'true');
+    if (installBanner) installBanner.style.display = 'none';
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  console.log('DhaanTrack was successfully installed as an App!');
+  if (installBanner) installBanner.style.display = 'none';
+});
